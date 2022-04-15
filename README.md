@@ -14,10 +14,8 @@ You Have 3 Skips Available Through The Game And Just Type 's' In The Console Win
 
 A Few Levels Have Been Banned From This To Give A Better Experience  
 Most Notably Levels Like Hell Train For Its Length, And Impossible Levels Like The HITC Re-upload  
-
--- Rules --  
-- If Diamond Time Is Not Achievable It Wont Get Rolled  
-- If Diamond Time Is Above 10 Minutes It Wont Get Rolled  
+Levels That Have Impossible/Annoyingly Hard Diamond Times Have Been Removed  
+Levels That Also Is Unfair/Can Crash Certain Peoples Games Is Also Removed  
 -- ---- --  
 Important: If Your Steam Directory Is Not The Default Path in 'Program Files (x86)\Steam',  
            Change The Path in 'config.txt' To Suit Your Installation Path.  
