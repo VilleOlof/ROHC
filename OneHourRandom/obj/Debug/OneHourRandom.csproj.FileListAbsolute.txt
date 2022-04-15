@@ -1,0 +1,9 @@
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\bin\Debug\OneHourRandom.exe.config
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\bin\Debug\OneHourRandom.exe
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\bin\Debug\OneHourRandom.pdb
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\obj\Debug\OneHourRandom.csprojAssemblyReference.cache
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\obj\Debug\OneHourRandom.csproj.CoreCompileInputs.cache
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\obj\Debug\OneHourRandom.exe
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\obj\Debug\OneHourRandom.pdb
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\bin\Debug\MIULevelKit.dll
+C:\Users\Ville\source\repos\OneHourRandom\OneHourRandom\obj\Debug\OneHourRandom.csproj.CopyComplete
