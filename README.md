@@ -8,7 +8,7 @@ This Program Keeps Track Of All The Medals You've Obtained And Reports It At The
 You Can Enable TTS in the config.txt File If You Prefer, It Will Read Out New Diamond Times, Completions & Time Left At Some Intervals And Time Up  
 This Can Be Useful If You Only Have One Monitor And Can't Have The Console Window Open Or-  
 If You Just Prefer Not To Read The Console Window And Just Get It Read Out For You.  
-Just Change It To The Second Row In config.txt to'true' To Enable It.  
+Just Change It To 'true' In The Second Row To Enable It. 
 
 You Have 3 Skips Available Through The Game And Just Type 's' In The Console Window To Skip A Level  
 
