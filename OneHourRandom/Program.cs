@@ -153,8 +153,9 @@ To Start The Challenge, Just Type 'Start'
                     if (!success) {
                         throw new Exception("Time was not a valid float");
                     }
+                    string levelLine = logContent.Substring(logIndex+16, timeIndex-26);
 
-                    if (time < diamondTime)
+                    if (time < diamondTime && levelLine == "ROHC")
                     {
                         Console.WriteLine("You Beat The Diamond Time!");
                         TTSQueue.Enqueue("You Beat The Diamond Time!");
@@ -274,7 +275,6 @@ To Start The Challenge, Just Type 'Start'
             "2276691009", // mounbain of mishaaaps
             "2727158488", // refinery bowl
         };
-
         public static string GetRandomLevel() {
             var folders = Directory.GetDirectories(steamFilePath);
             Random rnd = new Random();
@@ -283,15 +283,15 @@ To Start The Challenge, Just Type 'Start'
             string randomId = splitRandom[splitRandom.Length - 1];
             if (IllegalLevels.Contains(randomId))
             {
-                GetRandomLevel();
+                return GetRandomLevel();
             }
             if (SoftIllegalLevels.Contains(randomId) && rnd.Next(2) == 1)
             {
-                GetRandomLevel();
+                return GetRandomLevel();
             }
 
             Console.WriteLine("Level: " + Path.GetFileName(Directory.GetFiles(random)[0]));
-            
+
             return Directory.GetFiles(random)[0];
         }
 
