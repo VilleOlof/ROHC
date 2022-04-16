@@ -23,11 +23,9 @@ namespace OneHourRandom
         public static void Main(string[] args)
         {
             Console.WriteLine("Setting Up Program... Please Wait");
+            Console.SetWindowSize(100,40);
 
-            //string originPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming","LocalLow"), @"Bad Habit\MarbleItUp\");
-            //string customPath = originPath + @"CustomLevels\";
             Directory.CreateDirectory(customPath + "RandomChallenge");
-            //string challengePath = customPath + @"RandomChallenge\";
             string logPath = originPath + "Player.log";
             steamFilePath = File.ReadAllText(@".\config.txt").Split('\n')[0];
             steamFilePath = File.ReadAllText(@".\config.txt").Split('\n')[0].Substring(0, steamFilePath.Length - 1);
@@ -35,8 +33,7 @@ namespace OneHourRandom
             File.Copy(@".\ROHC.level", challengePath + "ROHC.level");
 
             synthesizer.SetOutputToDefaultAudioDevice();
-            if (usingTTS)
-            {
+            if (usingTTS) {
                 synthesizer.Speak("TTS Activated");
             }
 
@@ -57,22 +54,25 @@ And Then A Random Level Will Have Appeared.
 
 This Program Keeps Track Of All The Medals You've Obtained And Reports It At The End.
 
-You Can Enable TTS in the config.txt File If You Prefer, It Will Read Out New Diamond Times, Completions & Time Left At Some Intervals And Time Up
+You Can Enable TTS in the config.txt File If You Prefer, It Will Read Out New Diamond Times, 
+Completions & Time Left At Some Intervals And Times Up
+
 This Can Be Useful If You Only Have One Monitor And Can't Have The Console Window Open Or-
 If You Just Prefer Not To Read The Console Window And Just Get It Read Out For You.
-Just Change It To The Second Row In config.txt to'true' To Enable It.
+Just Change It To 'true' In The Second Row To Enable It.
 
 You Have 3 Skips Available Through The Game And Just Type 's' In The Console Window To Skip A Level
 
 A Few Levels Have Been Banned From This To Give A Better Experience
 Most Notably Levels Like Hell Train For Its Length, And Impossible Levels Like The HITC Re-upload
+Some Levels Have Also A Less Chance Of Appearing But Can Still Show Up, These Include Levels That
+Is Almost Only Possible With Analog/XInput Turning.
 
--- Rules --
-- If Diamond Time Is Not Achievable It Wont Get Rolled
-- If Diamond Time Is Above 10 Minutes It Wont Get Rolled
--- ---- --
+Levels That Have Impossible/Annoyingly Hard Diamond Times Have Been Removed
+Levels That Also Is Unfair/Can Crash Certain Peoples Games Is Also Removed
+
 Important: If Your Steam Directory Is Not The Default Path in 'Program Files (x86)\Steam',
-           Change The Path in 'config.txt' To Suit Your Installation Path.
+Change The Path in 'config.txt' To Suit Your Installation Path.
 
 To Start The Challenge, Just Type 'Start'
 ");
@@ -91,7 +91,7 @@ To Start The Challenge, Just Type 'Start'
             double pog = GetCountDown(initTime).TotalSeconds;
 
             float diamondTime = GetDiamondTime(challengePath + "ROHC.level");
-            Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds");
+            Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds \n");
             TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
 
             File.Delete(@".\Player.log");
@@ -103,34 +103,29 @@ To Start The Challenge, Just Type 'Start'
             Thread inputThread = new Thread(WaitForSkip);
             inputThread.IsBackground = true;
             inputThread.Start();
-            if (usingTTS == true)
-            {
+            if (usingTTS == true) {
                 Thread TTSThread = new Thread(TTSSpeaker);
                 TTSThread.IsBackground = true;
                 TTSThread.Start();
             }
 
 
-            while (true)
-            {
+            while (true) {
                 string logContent = "";
                 File.Delete(@".\Player.log");
                 File.Copy(logPath, @".\Player.log");
                 logContent = File.ReadAllText(@".\Player.log");
 
-                try
-                {
+                try {
                     logContent = logContent.Substring(latestScoreIndex);
                 }
-                catch
-                {
+                catch {
                     latestScoreIndex = 0;
                     logContent = File.ReadAllText(@".\Player.log");
                 }
 
                 int logIndex = logContent.IndexOf("Level Complete ");
-                if (logIndex != -1)
-                {
+                if (logIndex != -1) {
                     latestScoreIndex = logIndex + latestScoreIndex + 15;
 
                     int newLineIndex = logContent.Substring(logIndex).IndexOf("\n");
@@ -147,8 +142,7 @@ To Start The Challenge, Just Type 'Start'
                     Console.WriteLine(completeLine);
 
                     int timeIndex = completeLine.IndexOf("Time: ");
-                    if (timeIndex == -1)
-                    {
+                    if (timeIndex == -1) {
                         throw new Exception("Time not found in complete line");
                     }
 
@@ -156,8 +150,7 @@ To Start The Challenge, Just Type 'Start'
                     float time = -1f;
                     bool success = float.TryParse(completeLine.Substring(timeIndex), out time);
 
-                    if (!success)
-                    {
+                    if (!success) {
                         throw new Exception("Time was not a valid float");
                     }
 
@@ -172,25 +165,21 @@ To Start The Challenge, Just Type 'Start'
                         medalCount += 1;
                         Console.WriteLine("Diamond Count: " + medalCount);
                         TimeSpan timeLeft = GetCountDown(initTime);
-                        Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds}");
-                        if (medalCount == 5)
-                        {
+                        Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
+                        if (medalCount == 5) {
                             TTSQueue.Enqueue($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds}");
                         }
-                        else if (medalCount == 10)
-                        {
+                        else if (medalCount == 10) {
                             TTSQueue.Enqueue($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds}");
                         }
-                        else if (medalCount == 20)
-                        {
+                        else if (medalCount == 20) {
                             TTSQueue.Enqueue($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds}");
                         }
 
                     }
                 }
 
-                if (skip)
-                {
+                if (skip) {
                     skip = false;
                     CopyRandomLevel(challengePath);
                     diamondTime = GetDiamondTime(challengePath + "ROHC.level");
@@ -200,7 +189,7 @@ To Start The Challenge, Just Type 'Start'
                     Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds");
                     TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
                     TimeSpan timeLeft = GetCountDown(initTime);
-                    Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds}");
+                    Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
 
                 }
 
@@ -208,8 +197,7 @@ To Start The Challenge, Just Type 'Start'
 
 
                 pog = GetCountDown(initTime).TotalSeconds;
-                if (pog <= 0)
-                {
+                if (pog <= 0) {
                     break;
                 }
                 Thread.Sleep(1000);
@@ -238,7 +226,6 @@ To Start The Challenge, Just Type 'Start'
             "2790082937", // 7-6
             "2788029425", // 7-5
             "2787586183", // 7-4
-            "2284477064", // Road To The Beacon
             "2070710576", // Surfing Room
             "1800627073", // Chill Zone, all other chill zone has DT above 10 minute
             "2492180870", // Gravity Donut
@@ -246,11 +233,9 @@ To Start The Challenge, Just Type 'Start'
             "1617593121", // Tower Mistake 1
             "1627866427", // Tower Mistake 2
             "2508568039", // Hell Train
-            "2712867108", // Skill Issue
             "2075463805", // Diamond in the rhoughghgh
             "2078203299", // Bunny Hop
             "2499538173", // Bunny Hop 2
-            "2569510808", // Shifting Gears
             "2505197399", // Head reupload
             "2573074416", // Ansons mayhem level
             "1569010731", // Pain, Privated from workshop?
@@ -261,6 +246,33 @@ To Start The Challenge, Just Type 'Start'
             "2638960497", // square galaxy
             "2727269080", // burning PP
             "1577400348", // pickle planet
+            "2755282390", // clusterstorm category 5 thing
+        };
+        public static string[] SoftIllegalLevels = new string[]
+        {
+            "2284477064", // Road To The Beacon
+            "2712867108", // Skill Issue
+            "2569510808", // Shifting Gears
+            "1724086694", // Cold
+            "2435422163", // stinky kickflip
+            "2499791195", // neglected stars
+            "2368783983", // nebula thing
+            "2368611740", // altitude
+            "2372621296", // gem box air control
+            "2365599746", // friction gems
+            "2572614504", // learning to fricking controller fricking turn
+            "2546504159", // friction start
+            "2372872746", // light as air jumps
+            "2372839234", // simple ice skating
+            "2365303808", // up & up
+            "1757516807", // backroom
+            "1658291414", // dark world
+            "1658297109", // fractal judgement
+            "1680489798", // ghost
+            "1832657727", // collection kings
+            "2449116866", // mountain goat
+            "2276691009", // mounbain of mishaaaps
+            "2727158488", // refinery bowl
         };
 
         public static string GetRandomLevel() {
@@ -270,6 +282,10 @@ To Start The Challenge, Just Type 'Start'
             string[] splitRandom = random.Split('\\');
             string randomId = splitRandom[splitRandom.Length - 1];
             if (IllegalLevels.Contains(randomId))
+            {
+                GetRandomLevel();
+            }
+            if (SoftIllegalLevels.Contains(randomId) && rnd.Next(2) == 1)
             {
                 GetRandomLevel();
             }
