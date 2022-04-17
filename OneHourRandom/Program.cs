@@ -19,6 +19,11 @@ namespace OneHourRandom
         static string originPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow"), @"Bad Habit\MarbleItUp\");
         static string customPath = originPath + @"CustomLevels\";
         static string challengePath = customPath + @"RandomChallenge\";
+        static string currentLevel = "";
+
+        static int medalCount = 0;
+        static float diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+        static DateTime initTime;
 
         public static void Main(string[] args)
         {
@@ -87,10 +92,10 @@ To Start The Challenge, Just Type 'Start'
             Console.WriteLine("Challenge Has Begun, Start Your Gaming!" +
                 "\n");
             CopyRandomLevel(challengePath);
-            DateTime initTime = DateTime.Now.AddHours(1);
+            initTime = DateTime.Now.AddHours(1);
             double pog = GetCountDown(initTime).TotalSeconds;
 
-            float diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+
             Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds \n");
             TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
 
@@ -98,7 +103,7 @@ To Start The Challenge, Just Type 'Start'
             File.Copy(logPath, @".\Player.log");
 
             int latestScoreIndex = File.ReadAllText(@".\Player.log").Length - 1;
-            int medalCount = 0;
+
 
             Thread inputThread = new Thread(WaitForSkip);
             inputThread.IsBackground = true;
@@ -108,6 +113,9 @@ To Start The Challenge, Just Type 'Start'
                 TTSThread.IsBackground = true;
                 TTSThread.Start();
             }
+            Thread logThread = new Thread(LogOutput);
+            logThread.IsBackground = true;
+            logThread.Start();
 
 
             while (true) {
@@ -291,6 +299,7 @@ To Start The Challenge, Just Type 'Start'
             }
 
             Console.WriteLine("Level: " + Path.GetFileName(Directory.GetFiles(random)[0]));
+            currentLevel = Path.GetFileNameWithoutExtension(Directory.GetFiles(random)[0]);
 
             return Directory.GetFiles(random)[0];
         }
@@ -360,6 +369,17 @@ To Start The Challenge, Just Type 'Start'
             }
         }
 
+        public static void LogOutput()
+        {
+            // Medal Count, Current Medal Time, Time Left, Skips Available, Current Level
+            while (true)
+            {
+                File.WriteAllText(@".\logOutput.txt", "");
+                File.AppendAllText(@".\logOutput.txt",medalCount + "\n" + diamondTime.ToString() + "\n" + $"{GetCountDown(initTime).Minutes}:{GetCountDown(initTime).Seconds}" + "\n" + skipRemain + "\n" + currentLevel + "\n");
 
+
+                Thread.Sleep(1000);
+            }
+        }
     }
 }
