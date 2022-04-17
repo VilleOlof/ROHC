@@ -22,7 +22,7 @@ namespace OneHourRandom
         static string currentLevel = "";
 
         static int medalCount = 0;
-        static float diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+        static float diamondTime = 0;
         static DateTime initTime;
 
         public static void Main(string[] args)
@@ -94,7 +94,7 @@ To Start The Challenge, Just Type 'Start'
             CopyRandomLevel(challengePath);
             initTime = DateTime.Now.AddHours(1);
             double pog = GetCountDown(initTime).TotalSeconds;
-
+            diamondTime = GetDiamondTime(challengePath + "ROHC.level");
 
             Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds \n");
             TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
