@@ -7,14 +7,21 @@ using System.IO;
 using System.Threading;
 using MIU;
 using System.Speech.Synthesis;
+using System.Diagnostics;
 
 namespace OneHourRandom
 {
     class Program
     {
+        //silly dimden
+        //thanks to j2 for some help with troubleshooting and rng
+
         static string steamFilePath;
         static SpeechSynthesizer synthesizer = new SpeechSynthesizer();
-        static bool usingTTS = File.ReadAllText(@".\config.txt").Split('\n')[1].ToLower() == "true";
+        static bool usingTTS = File.ReadAllText(@".\config.txt").Split('\n')[1].ToLower().Trim() == "true";
+        static bool goldSkipping = File.ReadAllText(@".\config.txt").Split('\n')[2].ToLower().Trim() == "true";
+        static bool goldSkip = false;
+        public static bool skipGold = false;
 
         static string originPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow"), @"Bad Habit\MarbleItUp\");
         static string customPath = originPath + @"CustomLevels\";
@@ -23,12 +30,19 @@ namespace OneHourRandom
 
         static int medalCount = 0;
         static float diamondTime = 0;
+        static float goldTime = 0;
         static DateTime initTime;
+
+        static string random = "";
+        public static List<string> allowedLevels = new List<string>();
+        static bool setSeed = File.ReadAllText(@".\config.txt").Split('\n')[4].ToLower().Trim() != "false";
+        static int seed = File.ReadAllText(@".\config.txt").Split('\n')[4].GetHashCode();
+        public static Random rnd;
 
         public static void Main(string[] args)
         {
             Console.WriteLine("Setting Up Program... Please Wait");
-            Console.SetWindowSize(100,40);
+            Console.SetWindowSize(130,50);
 
             Directory.CreateDirectory(customPath + "RandomChallenge");
             string logPath = originPath + "Player.log";
@@ -36,6 +50,22 @@ namespace OneHourRandom
             steamFilePath = File.ReadAllText(@".\config.txt").Split('\n')[0].Substring(0, steamFilePath.Length - 1);
             File.Delete(challengePath + "ROHC.level");
             File.Copy(@".\ROHC.level", challengePath + "ROHC.level");
+
+            if (File.ReadAllText(@".\config.txt").Split('\n')[3].ToLower().Trim() == "true" && Process.GetProcessesByName("LogOutputDisplay").Length == 0)
+            {
+                Process.Start(@".\LogOutputDisplay.exe");
+                Console.WriteLine("Launched UI");
+            }
+
+            if (setSeed)
+            {
+                //setseed here
+                rnd = new Random(seed);
+            }
+            else
+            {
+                rnd = new Random();
+            }
 
             synthesizer.SetOutputToDefaultAudioDevice();
             if (usingTTS) {
@@ -62,41 +92,123 @@ This Program Keeps Track Of All The Medals You've Obtained And Reports It At The
 You Can Enable TTS in the config.txt File If You Prefer, It Will Read Out New Diamond Times, 
 Completions & Time Left At Some Intervals And Times Up
 
-This Can Be Useful If You Only Have One Monitor And Can't Have The Console Window Open Or-
-If You Just Prefer Not To Read The Console Window And Just Get It Read Out For You.
-Just Change It To 'true' In The Second Row To Enable It.
+There's Two Skip Modes (3 Skips Only & Only Skip If Gold Medal Is Aquired)
+Gold Medal Skip Mode Is Enabled By Default (Can Change in config.txt on line 3)
 
-You Have 3 Skips Available Through The Game And Just Type 's' In The Console Window To Skip A Level
+The Program (As You Might Have Noticed) Auto Launched A UI For You
+(Can Be Disabled On Line 4 in config.txt)
 
-A Few Levels Have Been Banned From This To Give A Better Experience
-Most Notably Levels Like Hell Train For Its Length, And Impossible Levels Like The HITC Re-upload
-Some Levels Have Also A Less Chance Of Appearing But Can Still Show Up, These Include Levels That
-Is Almost Only Possible With Analog/XInput Turning.
+The Program Generates A Random Seed If Line 5 In config.txt is 'false'
+If You Change This To Anything Else That Will Be The Random Seed
 
-Levels That Have Impossible/Annoyingly Hard Diamond Times Have Been Removed
-Levels That Also Is Unfair/Can Crash Certain Peoples Games Is Also Removed
+You Can Change The UI (LogOutputDisplay.exe) Configs in layoutconfig.txt
+Line 1 Is How Far From The Left The Window Should Be  
+Line 2 Is How Far From The Top The Window Should Be  
+Line 3 Is The Amount Of Time It Should Take For The Overlay To Update (Default 1500)  
 
 Important: If Your Steam Directory Is Not The Default Path in 'Program Files (x86)\Steam',
 Change The Path in 'config.txt' To Suit Your Installation Path.
 
-To Start The Challenge, Just Type 'Start'
+
+!!! Before Starting, Choose Your Challenge Mode Below By Typing The Correlating Number !!!
+
+'1' - Everything (Nothing Is Banned & Every Level Has a Chance To Get Rolled)
+'2' - Chaos (Only Impossible DTs And DTs Above 10 Minutes Are Banned)
+'3' - Intermediate (Only Impossible DTs And DTs Above 5 Minutes Are Banned)
+'4' - 'Beginner' (Only Impossible DTs And DTs Above 3 Minutes Are Banned, Alongside A Few Noticably Hard Levels)
+'5' - Shorty (Only Impossible DTs And DTs Above 1 Minutes Are Banned)
+'6' - Custom (Reads Banned Levels From 'userLevels.txt', Default Is An Example File Content & Format)
+
 ");
+            float DTmax = 0;
+            int goldCount = 0;
+            bool isEverything = false;
+            List<String> bannedLevels = new List<String>();
+            List<String> impossibleLevels = new List<String>() { "2506559064", "2505197399", "2573074416", "1569010731", "1579037685" };
+            // massive orb gravity // head reupload // ansons mayhem level // pain // impossible ring jump // ^^^^
+            List<String> challengingLevels = new List<String>() {"2684082316","2791461738","2790082937","2788029425", "2787586183","2070710576","1800627073","2492180870","2465277976","1617593121","1627866427","2508568039","2075463805","2078203299","2499538173","2575792735","1930341412","1800971629","2638960497","2727269080","1577400348","2755282390",};
+
+            GetPhysParams(challengePath + "ROHC.level");
 
             string menuInput = Console.ReadLine().ToLower();
-            if (menuInput != "start") {
+            if (menuInput == "1") {
+                DTmax = -1;
+                isEverything = true;
+                Console.WriteLine("'Everything' Mode Choosen");
+            }
+            else if (menuInput == "2") {
+                Console.WriteLine("'Chaos' Mode Choosen");
+                DTmax = 600;
+                bannedLevels.AddRange(impossibleLevels);
+            }
+            else if (menuInput == "3") {
+                Console.WriteLine("'Intermediate' Mode Choosen");
+                DTmax = 300;
+                bannedLevels.AddRange(impossibleLevels);
+            }
+            else if (menuInput == "4") {
+                Console.WriteLine("'Beginner' Mode Choosen");
+                DTmax = 90;
+                bannedLevels.AddRange(challengingLevels);
+                bannedLevels.AddRange(impossibleLevels);
+            }
+            else if (menuInput == "5") {
+                Console.WriteLine("'Shorty' Mode Choosen");
+                DTmax = 60;
+                bannedLevels.AddRange(impossibleLevels);
+            }
+            else if (menuInput == "6") {
+                DTmax = -1;
+                bannedLevels.AddRange(new List<String>() { File.ReadAllText(@".\userLevels.txt")});
+            }
+            else {
+                Console.WriteLine("No Mode Specified, Defaulted to 'Beginner'");
+                DTmax = 90;
+                bannedLevels.AddRange(challengingLevels);
+                bannedLevels.AddRange(impossibleLevels);
+            }
+
+                Console.WriteLine("\nSetting Up Custom Lists... \n");
+            if (!isEverything)
+            {
+                foreach (var currentDir in Directory.GetDirectories(steamFilePath))
+                {
+                    string[] splitCurry = currentDir.Split('\\');
+                    string curryId = splitCurry[splitCurry.Length - 1];
+                    string physParams = GetPhysParams(challengePath + "ROHC.level");
+
+                    if (!bannedLevels.Contains(curryId) && (DTmax >= 0 ? (GetDiamondTime(Directory.GetFiles(currentDir)[0]) < DTmax) : true) && (physParams == "" || physParams[0] != '{'))
+                    {
+                        allowedLevels.Add(currentDir);
+                    }
+                }
+            }
+            else
+            {
+                allowedLevels.AddRange(Directory.GetDirectories(steamFilePath));
+            }
+
+            Console.WriteLine("To Start The Challenge, Just Type 'Start'\n");
+            string menuStart = Console.ReadLine().ToLower();
+            if (menuStart != "start")
+            {
                 Console.WriteLine("So you've choosen death...");
                 Thread.Sleep(2500);
                 Environment.Exit(1);
             }
-            Console.Clear();
-            Console.WriteLine("Challenge Has Begun, Start Your Gaming!" +
-                "\n");
+
             CopyRandomLevel(challengePath);
             initTime = DateTime.Now.AddHours(1);
             double pog = GetCountDown(initTime).TotalSeconds;
             diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+            goldTime = GetGoldTime(challengePath + "ROHC.level");
 
-            Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds \n");
+            Console.Clear();
+            Console.WriteLine("Challenge Has Begun, Start Your Gaming!" +
+                "\n");
+
+            Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds");
+            Console.WriteLine("Gold Time On Current Level: " + goldTime + " Seconds \n");
             TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
 
             File.Delete(@".\Player.log");
@@ -148,6 +260,7 @@ To Start The Challenge, Just Type 'Start'
                     }
 
                     Console.WriteLine(completeLine);
+                    
 
                     int timeIndex = completeLine.IndexOf("Time: ");
                     if (timeIndex == -1) {
@@ -157,6 +270,13 @@ To Start The Challenge, Just Type 'Start'
                     timeIndex += 6;
                     float time = -1f;
                     bool success = float.TryParse(completeLine.Substring(timeIndex), out time);
+
+                    if (time < GetGoldTime(challengePath + "ROHC.level") && time > GetDiamondTime(challengePath + "ROHC.level") && goldSkipping)
+                    {
+                        Console.WriteLine("Beat Gold Time! You Can Now Skip This Level! \n Just Type 's' To Skip!");
+                        goldSkip = true;
+                        goldCount++;
+                    }
 
                     if (!success) {
                         throw new Exception("Time was not a valid float");
@@ -169,7 +289,9 @@ To Start The Challenge, Just Type 'Start'
                         TTSQueue.Enqueue("You Beat The Diamond Time!");
                         CopyRandomLevel(challengePath);
                         diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+                        goldTime = GetGoldTime(challengePath + "ROHC.level");
                         Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds");
+                        Console.WriteLine("Gold Time On Current Level: " + goldTime + " Seconds");
                         TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
                         medalCount += 1;
                         Console.WriteLine("Diamond Count: " + medalCount);
@@ -192,17 +314,31 @@ To Start The Challenge, Just Type 'Start'
                     skip = false;
                     CopyRandomLevel(challengePath);
                     diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+                    goldTime = GetGoldTime(challengePath + "ROHC.level");
                     Console.WriteLine("You Skipped This Level, Skips Remaining: " + skipRemain);
                     TTSQueue.Enqueue("You Skipped This Level, Skips Remaining: " + skipRemain);
 
                     Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds");
+                    Console.WriteLine("Gold Time On Current Level:" + goldTime + " Seconds");
                     TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
                     TimeSpan timeLeft = GetCountDown(initTime);
                     Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
+                    GetPhysParams(challengePath + "ROHC.level");
 
                 }
+                if (skipGold) {
+                    skipGold = false;
+                    goldSkip = false;
+                    CopyRandomLevel(challengePath);
+                    diamondTime = GetDiamondTime(challengePath + "ROHC.level");
+                    goldTime = GetGoldTime(challengePath + "ROHC.level");
 
-
+                    Console.WriteLine("Diamond Time On Current Level: " + diamondTime + " Seconds");
+                    Console.WriteLine("Gold Time On Current Level:" + goldTime + " Seconds");
+                    TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
+                    TimeSpan timeLeft = GetCountDown(initTime);
+                    Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
+                }
 
 
                 pog = GetCountDown(initTime).TotalSeconds;
@@ -221,86 +357,18 @@ To Start The Challenge, Just Type 'Start'
                 "Restart This Program And See If You Can Beat Your Best Score!"
                 
                 );
-            File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals \n");
+            File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals - " + goldCount + " Gold Medals \n");
 
             Console.ReadKey();
         }
-
-
-        public static string[] IllegalLevels = new string[]
-        {
-            "2506559064", // Massive Gravity Orb Level
-            "2684082316", // Cap Kingdom Level
-            "2791461738", // 7-7
-            "2790082937", // 7-6
-            "2788029425", // 7-5
-            "2787586183", // 7-4
-            "2070710576", // Surfing Room
-            "1800627073", // Chill Zone, all other chill zone has DT above 10 minute
-            "2492180870", // Gravity Donut
-            "2465277976", // Sisphysicsfhbeyrh day off
-            "1617593121", // Tower Mistake 1
-            "1627866427", // Tower Mistake 2
-            "2508568039", // Hell Train
-            "2075463805", // Diamond in the rhoughghgh
-            "2078203299", // Bunny Hop
-            "2499538173", // Bunny Hop 2
-            "2505197399", // Head reupload
-            "2573074416", // Ansons mayhem level
-            "1569010731", // Pain, Privated from workshop?
-            "1579037685", // Impossible ring jump
-            "2575792735", // rolling over it
-            "1930341412", // chill zone tall
-            "1800971629", // Chill zone lite
-            "2638960497", // square galaxy
-            "2727269080", // burning PP
-            "1577400348", // pickle planet
-            "2755282390", // clusterstorm category 5 thing
-        };
-        public static string[] SoftIllegalLevels = new string[]
-        {
-            "2284477064", // Road To The Beacon
-            "2712867108", // Skill Issue
-            "2569510808", // Shifting Gears
-            "1724086694", // Cold
-            "2435422163", // stinky kickflip
-            "2499791195", // neglected stars
-            "2368783983", // nebula thing
-            "2368611740", // altitude
-            "2372621296", // gem box air control
-            "2365599746", // friction gems
-            "2572614504", // learning to fricking controller fricking turn
-            "2546504159", // friction start
-            "2372872746", // light as air jumps
-            "2372839234", // simple ice skating
-            "2365303808", // up & up
-            "1757516807", // backroom
-            "1658291414", // dark world
-            "1658297109", // fractal judgement
-            "1680489798", // ghost
-            "1832657727", // collection kings
-            "2449116866", // mountain goat
-            "2276691009", // mounbain of mishaaaps
-            "2727158488", // refinery bowl
-        };
         public static string GetRandomLevel() {
-            var folders = Directory.GetDirectories(steamFilePath);
-            Random rnd = new Random();
-            string random = folders[rnd.Next(folders.Length)];
-            string[] splitRandom = random.Split('\\');
-            string randomId = splitRandom[splitRandom.Length - 1];
-            if (IllegalLevels.Contains(randomId))
-            {
-                return GetRandomLevel();
-            }
-            if (SoftIllegalLevels.Contains(randomId) && rnd.Next(2) == 1)
-            {
-                return GetRandomLevel();
-            }
+            
 
+            random = allowedLevels[rnd.Next(allowedLevels.Count)];
             Console.WriteLine("Level: " + Path.GetFileName(Directory.GetFiles(random)[0]));
             currentLevel = Path.GetFileNameWithoutExtension(Directory.GetFiles(random)[0]);
 
+            allowedLevels.Remove(random);
             return Directory.GetFiles(random)[0];
         }
 
@@ -313,6 +381,7 @@ To Start The Challenge, Just Type 'Start'
             TimeSpan t = initTime - DateTime.Now;
             return t;
         }
+
         public static float GetDiamondTime(string filePath)
         {
             var stream = new ByteStream();
@@ -330,25 +399,90 @@ To Start The Challenge, Just Type 'Start'
             stream.ReadSingle(out diamondTime);
             return diamondTime;
         }
+
+        public static float GetGoldTime(string filePath)
+        {
+            var stream = new ByteStream();
+            stream.Buffer = File.ReadAllBytes(filePath);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+
+            float goldTime;
+            stream.ReadSingle(out _);
+            stream.ReadSingle(out goldTime);
+            return goldTime;
+        }
+        public static string GetPhysParams(string filePath)
+        {
+            byte pog;
+            var stream = new ByteStream();
+            stream.Buffer = File.ReadAllBytes(filePath);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+            stream.ReadByte(out pog);
+            stream.ReadByte(out _);
+            stream.ReadByte(out _);
+
+            string physParams;
+            stream.ReadSingle(out _);
+            stream.ReadSingle(out _);
+            stream.ReadSingle(out _);
+
+            bool legacy = false;
+
+            if ((char)pog == '5')
+            {
+                legacy = true;
+            } else
+            {
+                stream.ReadString(out _);
+            }
+
+            stream.ReadString(out physParams);
+            return physParams;
+        }
+
         public static bool skip = false;
         public static int skipRemain = 3;
 
         public static void WaitForSkip()
         {
+            string input = "";
+            if (goldSkipping)
+            {
+                skipRemain = 0;
+            }
             while (true)
             {
-                string input = Console.ReadKey().KeyChar.ToString();
-                if (input.ToLower() == "s")
+                input = Console.ReadKey().KeyChar.ToString();
+                if (input.ToLower() == "s" && goldSkip)
+                {
+                    Console.Write("\n");
+                    skipGold = true;
+                    //Console.WriteLine("GOLDSKIP");
+                }
+                else if (input.ToLower() == "s" && !goldSkip)
                 {
                     Console.Write("\n");
                     if (skipRemain > 0)
                     {
                         skip = true;
                         skipRemain--;
-                    } else
-                    {
-                        Console.WriteLine("No More Skips Available");
+                        //Console.WriteLine("NORMALSKIP");
                     }
+                    else
+                    {
+                        Console.WriteLine("No Skips Available");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No Skips Available");
                 }
             }
         }
@@ -371,11 +505,11 @@ To Start The Challenge, Just Type 'Start'
 
         public static void LogOutput()
         {
-            // Medal Count, Current Medal Time, Time Left, Skips Available, Current Level
+            // Medal Count, Current Medal Time, Time Left, Skips Available, Current Level,Current Gold Medal Time, GoldSkip 
             while (true)
             {
                 File.WriteAllText(@".\logOutput.txt", "");
-                File.AppendAllText(@".\logOutput.txt",medalCount + "\n" + diamondTime.ToString() + "\n" + $"{GetCountDown(initTime).Minutes}:{GetCountDown(initTime).Seconds}" + "\n" + skipRemain + "\n" + currentLevel + "\n");
+                File.AppendAllText(@".\logOutput.txt",medalCount + "\n" + diamondTime.ToString() + "\n" + $"{GetCountDown(initTime).Minutes}:{GetCountDown(initTime).Seconds}" + "\n" + skipRemain + "\n" + currentLevel + "\n" + goldTime.ToString() + "\n" + goldSkip.ToString() + "\n");
 
 
                 Thread.Sleep(1000);
