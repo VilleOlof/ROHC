@@ -31,6 +31,7 @@ namespace OneHourRandom
         static int medalCount = 0;
         static float diamondTime = 0;
         static float goldTime = 0;
+        static bool logOut = true;
         static DateTime initTime;
 
         static string random = "";
@@ -123,6 +124,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             float DTmax = 0;
             int goldCount = 0;
             bool isEverything = false;
+            string mode = "";
             List<String> bannedLevels = new List<String>();
             List<String> impossibleLevels = new List<String>() { "2506559064", "2505197399", "2573074416", "1569010731", "1579037685" };
             // massive orb gravity // head reupload // ansons mayhem level // pain // impossible ring jump // ^^^^
@@ -134,36 +136,43 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             if (menuInput == "1") {
                 DTmax = -1;
                 isEverything = true;
+                mode = "Everything";
                 Console.WriteLine("'Everything' Mode Choosen");
             }
             else if (menuInput == "2") {
                 Console.WriteLine("'Chaos' Mode Choosen");
                 DTmax = 600;
+                mode = "Chaos";
                 bannedLevels.AddRange(impossibleLevels);
             }
             else if (menuInput == "3") {
                 Console.WriteLine("'Intermediate' Mode Choosen");
                 DTmax = 300;
+                mode = "Intermediate";
                 bannedLevels.AddRange(impossibleLevels);
             }
             else if (menuInput == "4") {
                 Console.WriteLine("'Beginner' Mode Choosen");
                 DTmax = 90;
+                mode = "Beginner";
                 bannedLevels.AddRange(challengingLevels);
                 bannedLevels.AddRange(impossibleLevels);
             }
             else if (menuInput == "5") {
                 Console.WriteLine("'Shorty' Mode Choosen");
                 DTmax = 60;
+                mode = "Shorty";
                 bannedLevels.AddRange(impossibleLevels);
             }
             else if (menuInput == "6") {
                 DTmax = -1;
+                mode = "Custom";
                 bannedLevels.AddRange(new List<String>() { File.ReadAllText(@".\userLevels.txt")});
             }
             else {
                 Console.WriteLine("No Mode Specified, Defaulted to 'Beginner'");
                 DTmax = 90;
+                mode = "Beginner";
                 bannedLevels.AddRange(challengingLevels);
                 bannedLevels.AddRange(impossibleLevels);
             }
@@ -294,7 +303,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                         Console.WriteLine("Gold Time On Current Level: " + goldTime + " Seconds");
                         TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
                         medalCount += 1;
-                        Console.WriteLine("Diamond Count: " + medalCount);
+                        Console.WriteLine("Diamond Count: " + medalCount + " / Gold Count: " + goldCount);
                         TimeSpan timeLeft = GetCountDown(initTime);
                         Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
                         if (medalCount == 5) {
@@ -347,6 +356,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                 }
                 Thread.Sleep(1000);
             }
+            logOut = false;
             Console.Clear();
             Console.WriteLine("Time Is Up! No More Gaming!");
             TTSQueue.Enqueue("Time Is Up! No More Gaming!");
@@ -357,7 +367,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                 "Restart This Program And See If You Can Beat Your Best Score!"
                 
                 );
-            File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals - " + goldCount + " Gold Medals \n");
+            File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
 
             Console.ReadKey();
         }
@@ -506,7 +516,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
         public static void LogOutput()
         {
             // Medal Count, Current Medal Time, Time Left, Skips Available, Current Level,Current Gold Medal Time, GoldSkip 
-            while (true)
+            while (logOut)
             {
                 File.WriteAllText(@".\logOutput.txt", "");
                 File.AppendAllText(@".\logOutput.txt",medalCount + "\n" + diamondTime.ToString() + "\n" + $"{GetCountDown(initTime).Minutes}:{GetCountDown(initTime).Seconds}" + "\n" + skipRemain + "\n" + currentLevel + "\n" + goldTime.ToString() + "\n" + goldSkip.ToString() + "\n");
