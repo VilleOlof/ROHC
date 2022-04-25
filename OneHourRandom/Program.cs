@@ -184,12 +184,13 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                 {
                     string[] splitCurry = currentDir.Split('\\');
                     string curryId = splitCurry[splitCurry.Length - 1];
-                    string physParams = GetPhysParams(challengePath + "ROHC.level");
+                    string physParams = GetPhysParams(Directory.GetFiles(currentDir)[0]);
 
                     if (!bannedLevels.Contains(curryId) && (DTmax >= 0 ? (GetDiamondTime(Directory.GetFiles(currentDir)[0]) < DTmax) : true) && (physParams == "" || physParams[0] != '{'))
                     {
                         allowedLevels.Add(currentDir);
                     }
+                    //Console.WriteLine("DIR " + Directory.GetFiles(currentDir)[0] + "   PARAM; " + physParams);
                 }
             }
             else
