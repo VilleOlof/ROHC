@@ -17,9 +17,10 @@ namespace OneHourRandom
         //thanks to j2 for some help with troubleshooting and rng
 
         static string steamFilePath;
+        static string configPath = @".\ROHC Files\config.txt";
         static SpeechSynthesizer synthesizer = new SpeechSynthesizer();
-        static bool usingTTS = File.ReadAllText(@".\config.txt").Split('\n')[1].ToLower().Trim() == "true";
-        static bool goldSkipping = File.ReadAllText(@".\config.txt").Split('\n')[2].ToLower().Trim() == "true";
+        static bool usingTTS = File.ReadAllText(configPath).Split('\n')[1].ToLower().Trim() == "true";
+        static bool goldSkipping = File.ReadAllText(configPath).Split('\n')[2].ToLower().Trim() == "true";
         static bool goldSkip = false;
         public static bool skipGold = false;
 
@@ -36,9 +37,11 @@ namespace OneHourRandom
 
         static string random = "";
         public static List<string> allowedLevels = new List<string>();
-        static bool setSeed = File.ReadAllText(@".\config.txt").Split('\n')[4].ToLower().Trim() != "false";
-        static int seed = File.ReadAllText(@".\config.txt").Split('\n')[4].GetHashCode();
+        static bool setSeed = File.ReadAllText(configPath).Split('\n')[4].ToLower().Trim() != "false";
+        static int seed = File.ReadAllText(configPath).Split('\n')[4].GetHashCode();
         public static Random rnd;
+
+        public static List<string> levelHistory = new List<string>();
 
         public static void Main(string[] args)
         {
@@ -47,12 +50,12 @@ namespace OneHourRandom
 
             Directory.CreateDirectory(customPath + "RandomChallenge");
             string logPath = originPath + "Player.log";
-            steamFilePath = File.ReadAllText(@".\config.txt").Split('\n')[0];
-            steamFilePath = File.ReadAllText(@".\config.txt").Split('\n')[0].Substring(0, steamFilePath.Length - 1);
+            steamFilePath = File.ReadAllText(configPath).Split('\n')[0];
+            steamFilePath = File.ReadAllText(configPath).Split('\n')[0].Substring(0, steamFilePath.Length - 1);
             File.Delete(challengePath + "ROHC.level");
-            File.Copy(@".\ROHC.level", challengePath + "ROHC.level");
+            File.Copy(@".\ROHC Files\ROHC.level", challengePath + "ROHC.level");
 
-            if (File.ReadAllText(@".\config.txt").Split('\n')[3].ToLower().Trim() == "true" && Process.GetProcessesByName("LogOutputDisplay").Length == 0)
+            if (File.ReadAllText(configPath).Split('\n')[3].ToLower().Trim() == "true" && Process.GetProcessesByName("LogOutputDisplay").Length == 0)
             {
                 Process.Start(@".\LogOutputDisplay.exe");
                 Console.WriteLine("Launched UI");
@@ -167,7 +170,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             else if (menuInput == "6") {
                 DTmax = -1;
                 mode = "Custom";
-                bannedLevels.AddRange(new List<String>() { File.ReadAllText(@".\userLevels.txt")});
+                bannedLevels.AddRange(new List<String>() { File.ReadAllText(@".\ROHC Files\userLevels.txt")});
             }
             else {
                 Console.WriteLine("No Mode Specified, Defaulted to 'Beginner'");
@@ -221,10 +224,11 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             Console.WriteLine("Gold Time On Current Level: " + goldTime + " Seconds \n");
             TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
 
-            File.Delete(@".\Player.log");
-            File.Copy(logPath, @".\Player.log");
+            string playerPath = @".\ROHC Files\Player.log";
+            File.Delete(playerPath);
+            File.Copy(logPath, playerPath);
 
-            int latestScoreIndex = File.ReadAllText(@".\Player.log").Length - 1;
+            int latestScoreIndex = File.ReadAllText(playerPath).Length - 1;
 
 
             Thread inputThread = new Thread(WaitForSkip);
@@ -242,9 +246,9 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
 
             while (true) {
                 string logContent = "";
-                File.Delete(@".\Player.log");
-                File.Copy(logPath, @".\Player.log");
-                logContent = File.ReadAllText(@".\Player.log");
+                File.Delete(playerPath);
+                File.Copy(logPath, playerPath);
+                logContent = File.ReadAllText(playerPath);
 
                 try {
                     logContent = logContent.Substring(latestScoreIndex);
@@ -368,7 +372,32 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                 "Restart This Program And See If You Can Beat Your Best Score!"
                 
                 );
-            File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
+            int fileCount = Directory.GetFiles(@".\Highscores", "*.txt").Length + 1;
+            string highscorePath = $@".\Highscores\Attempt {fileCount}.txt";
+
+            string highscoreSkipRemain = "";
+            if (skipRemain == 0) {
+                highscoreSkipRemain = "";
+            }
+            else {
+                highscoreSkipRemain = "\n" + "Skips Left: " + skipRemain.ToString();
+            }
+            var fileStream = File.Create(highscorePath);
+            fileStream.Close();
+
+            File.AppendAllText(highscorePath, $@"
+Attempt Number #{fileCount}
+{highscoreSkipRemain}
+Diamond Medals: {medalCount}
+Gold Medals: {goldCount}
+Challenge Mode: {mode}
+
+Level History:
+");
+            for (int i = 0; i < levelHistory.Count; i++) {
+                File.AppendAllText(highscorePath,$@"#{i+1} - {levelHistory[i]}" + "\n");
+            }
+            //File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
 
             Console.ReadKey();
         }
@@ -377,6 +406,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
 
             random = allowedLevels[rnd.Next(allowedLevels.Count)];
             Console.WriteLine("Level: " + Path.GetFileName(Directory.GetFiles(random)[0]));
+            levelHistory.Add(Path.GetFileNameWithoutExtension(Directory.GetFiles(random)[0]));
             currentLevel = Path.GetFileNameWithoutExtension(Directory.GetFiles(random)[0]);
 
             allowedLevels.Remove(random);
@@ -519,8 +549,9 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             // Medal Count, Current Medal Time, Time Left, Skips Available, Current Level,Current Gold Medal Time, GoldSkip 
             while (logOut)
             {
-                File.WriteAllText(@".\logOutput.txt", "");
-                File.AppendAllText(@".\logOutput.txt",medalCount + "\n" + diamondTime.ToString() + "\n" + $"{GetCountDown(initTime).Minutes}:{GetCountDown(initTime).Seconds}" + "\n" + skipRemain + "\n" + currentLevel + "\n" + goldTime.ToString() + "\n" + goldSkip.ToString() + "\n");
+                string outPutPath = @".\ROHC Files\logOutput.txt";
+                File.WriteAllText(outPutPath, "");
+                File.AppendAllText(outPutPath, medalCount + "\n" + diamondTime.ToString() + "\n" + $"{GetCountDown(initTime).Minutes}:{GetCountDown(initTime).Seconds}" + "\n" + skipRemain + "\n" + currentLevel + "\n" + goldTime.ToString() + "\n" + goldSkip.ToString() + "\n");
 
 
                 Thread.Sleep(1000);
