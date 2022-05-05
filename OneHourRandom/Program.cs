@@ -40,8 +40,11 @@ namespace OneHourRandom
         static bool setSeed = File.ReadAllText(configPath).Split('\n')[4].ToLower().Trim() != "false";
         static int seed = File.ReadAllText(configPath).Split('\n')[4].GetHashCode();
         public static Random rnd;
+        public static int randomSeed = Environment.TickCount;
 
         public static List<string> levelHistory = new List<string>();
+        public static List<string> medalHistory = new List<string>();
+        static int minutes = Convert.ToInt32(File.ReadAllText(configPath).Split('\n')[5].ToLower().Trim());
 
         public static void Main(string[] args)
         {
@@ -68,7 +71,7 @@ namespace OneHourRandom
             }
             else
             {
-                rnd = new Random();
+                rnd = new Random(randomSeed);
             }
 
             synthesizer.SetOutputToDefaultAudioDevice();
@@ -104,6 +107,10 @@ The Program (As You Might Have Noticed) Auto Launched A UI For You
 
 The Program Generates A Random Seed If Line 5 In config.txt is 'false'
 If You Change This To Anything Else That Will Be The Random Seed
+
+On Line 6 In config.txt You Can Change The Time Limit (Default 60)
+This Number Changes In Minutes So Lowest Is 1 Minutes And You Can
+Customize How Long You Wanna Play The Game
 
 You Can Change The UI (LogOutputDisplay.exe) Configs in layoutconfig.txt
 Line 1 Is How Far From The Left The Window Should Be  
@@ -193,6 +200,9 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                     {
                         allowedLevels.Add(currentDir);
                     }
+                    else {
+                        bannedLevels.Add(curryId);
+                    }
                     //Console.WriteLine("DIR " + Directory.GetFiles(currentDir)[0] + "   PARAM; " + physParams);
                 }
             }
@@ -211,7 +221,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             }
 
             CopyRandomLevel(challengePath);
-            initTime = DateTime.Now.AddHours(1);
+            initTime = DateTime.Now.AddMinutes(minutes);
             double pog = GetCountDown(initTime).TotalSeconds;
             diamondTime = GetDiamondTime(challengePath + "ROHC.level");
             goldTime = GetGoldTime(challengePath + "ROHC.level");
@@ -320,6 +330,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                         else if (medalCount == 20) {
                             TTSQueue.Enqueue($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds}");
                         }
+                        medalHistory.Add("Diamond Medal");
 
                     }
                 }
@@ -338,6 +349,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                     TimeSpan timeLeft = GetCountDown(initTime);
                     Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
                     GetPhysParams(challengePath + "ROHC.level");
+                    medalHistory.Add("Skipped");
 
                 }
                 if (skipGold) {
@@ -352,6 +364,7 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                     TTSQueue.Enqueue("Diamond Time On Current Level: " + diamondTime + " Seconds");
                     TimeSpan timeLeft = GetCountDown(initTime);
                     Console.WriteLine($"Time Left: {timeLeft.Minutes}:{timeLeft.Seconds} \n");
+                    medalHistory.Add("Gold Skipped");
                 }
 
 
@@ -385,6 +398,13 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             var fileStream = File.Create(highscorePath);
             fileStream.Close();
 
+            if (medalHistory.Count() == 0) {
+                medalHistory.Add("Didn't Finish");
+            }
+            else {
+                medalHistory.Insert(medalHistory.Count(), "Didn't Finish");
+            }
+
             File.AppendAllText(highscorePath, $@"
 Attempt Number #{fileCount}
 {highscoreSkipRemain}
@@ -395,10 +415,31 @@ Challenge Mode: {mode}
 Level History:
 ");
             for (int i = 0; i < levelHistory.Count; i++) {
-                File.AppendAllText(highscorePath,$@"#{i+1} - {levelHistory[i]}" + "\n");
+                File.AppendAllText(highscorePath,$@"#{i+1} - {levelHistory[i]} / {medalHistory[i]}" + "\n");
             }
-            //File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
+            int highscoreSeed = randomSeed;
+            if (setSeed) {
+                highscoreSeed = seed;
+            }
 
+            File.AppendAllText(highscorePath, "\n\n" + 
+                $@"Set Seed: {setSeed}"+"\n"+
+                $@"Seed: {highscoreSeed}"+"\n"+
+                $@"Used TTS: {usingTTS}" + "\n"+
+                $@"Used Gold Skipping: {goldSkipping}"+"\n"+
+                $@"Time Limit: {minutes} Minute(s)"+"\n"+
+                $@"Allowed Level Count: {allowedLevels.Count()}");
+            
+            File.AppendAllText(highscorePath,"\n\n\n" + $@"Banned Levels:" + "\n");
+            for (int i = 0; i < bannedLevels.Count; i++) {
+                int lineAmount = File.ReadLines(highscorePath).Count();
+                File.AppendAllText(highscorePath,$"\"{bannedLevels[i]}\", ");
+                if (File.ReadLines(highscorePath).Skip(lineAmount-1).Take(1).First().Count() == 140) {
+                    File.AppendAllText(highscorePath," \n");
+                }
+            }
+
+            //File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
             Console.ReadKey();
         }
         public static string GetRandomLevel() {
