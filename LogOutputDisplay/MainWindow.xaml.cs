@@ -85,7 +85,7 @@ namespace LogOutputDisplay
                     else { minutes = Program.GetCountDown(Program.initTime).Minutes.ToString(); }
 
                     string timeLeft = $"{minutes}:{seconds}";
-                    if (!Program.challengeStarted) {
+                    if (!Program.challengeStarted || Program.challengeEnded) {
                         timeLeft = "00:00";
                     }
                     string skipsAvailable = Program.skipRemain.ToString();
@@ -262,6 +262,7 @@ namespace LogOutputDisplay
         public static List<string> medalHistory = new List<string>();
         static int minutes = 0;
         public static bool challengeStarted = false;
+        public static bool challengeEnded = false;
         
         public static void MainStartUp()
         {
@@ -615,8 +616,10 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                 Thread.Sleep(1000);
             }
             currentLevel = "Time's Up!";
+            challengeEnded = true;
             diamondTime = 0;
             goldTime = 0;
+
 
             Logger.Log("Time Is Up! No More Gaming!");
             TTSQueue.Enqueue("Time Is Up! No More Gaming!");
@@ -682,12 +685,13 @@ Level History:
             for (int i = 0; i < bannedLevels.Count; i++)
             {
                 int lineAmount = File.ReadLines(highscorePath).Count();
-                File.AppendAllText(highscorePath, $"\"{bannedLevels[i]}\",");
+                File.AppendAllText(highscorePath, $"\"{bannedLevels[i]}\", ");
                 if (File.ReadLines(highscorePath).Skip(lineAmount - 1).Take(1).First().Count() == 140)
                 {
                     File.AppendAllText(highscorePath, " \n");
                 }
             }
+            skipRemain = 0;
 
             //File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
         }
