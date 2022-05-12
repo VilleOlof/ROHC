@@ -13,6 +13,7 @@ Options Can Be changed in Config.txt in ./ROCH Files/ And Their Defaults Are Lis
 - Debug (false)
 - TimeLimit (60)
 - ChallengeMode (4)
+- EndlessMode (false)
 - WindowLeft (10)
 - WindowTop (10)
 - LayoutUpdate (50)

@@ -30,6 +30,15 @@ namespace LogOutputDisplay
         static string windowLeft = "";
         static string windowTop = "";
         static string threadSleep = "";
+        public static bool endlessMode = false;
+        public static DateTime initTime = DateTime.Now;
+        public static List<string> allowedLevels = new List<string>();
+        static bool setSeed = false;
+        static int seed = 0;
+        public static Random rnd;
+        public static int randomSeed = Environment.TickCount;
+        public static TimeSpan counter;
+        public static TimeSpan finishedTime;
 
         public static MainWindow instance;
 
@@ -46,7 +55,7 @@ namespace LogOutputDisplay
 
             InitializeComponent();
             instance = this;
-
+            // ################################################ YOU SHALL NOT PASS ##########################################################################
             Logger.Init();
             Config.Init();
 
@@ -57,8 +66,26 @@ namespace LogOutputDisplay
             windowLeft = Config.configValues["WindowLeft"];
             windowTop = Config.configValues["WindowTop"];
             threadSleep = Config.configValues["LayoutUpdate"];
+            endlessMode = Config.configValues["EndlessMode"].ToLower().Trim() == "true";
 
-            
+            setSeed = Config.configValues["Seed"].ToLower().Trim() != "false";
+            seed = Config.configValues["Seed"].GetHashCode();
+
+            if (setSeed)
+            {
+                //setseed here
+                Program.rnd = new Random(seed);
+                Logger.Log($"Set Seed: {seed}");
+            }
+            else
+            {
+                Program.rnd = new Random(randomSeed);
+                Logger.Log($"Random Seed: {randomSeed}");
+            }
+            if (seed.ToString().Contains("69") || randomSeed.ToString().Contains("420")) {
+                authorField.Content = "ROHC By Dimden";
+            }
+
             this.Left = Double.Parse(windowLeft);
             this.Top = Double.Parse(windowTop);
 
@@ -67,40 +94,51 @@ namespace LogOutputDisplay
             DebugContainer.Visibility = Logger.isActive ? Visibility.Visible : Visibility.Hidden;
             int currentmode = Convert.ToInt32(Config.configValues["ChallengeMode"]) - 1;
             string[] modeArray = new string[] { "Everything", "Chaos", "Intermediate", "Normal", "Shorty", "Custom" };
-            Program.currentLevel = $"Press Start! | Mode: [{modeArray[currentmode]}]";
+            Program.currentLevel = $"Press Start! | Mode: [{(endlessMode ? "Endless" : modeArray[currentmode])}]";
             string seconds = "";
             string minutes = "";
             Task.Run(() =>
             {
                 while (true)
                 {
+                    TimeSpan timeSince = Program.GetCountUp(initTime);
                     string medalCount = Program.medalCount.ToString();
                     string medalTime = Program.diamondTime.ToString();
-
-                    if (Program.GetCountDown(Program.initTime).Seconds < 10) {
-                        seconds = "0" + Program.GetCountDown(Program.initTime).Seconds.ToString();
-                    }
-                    else { seconds = Program.GetCountDown(Program.initTime).Seconds.ToString(); }
-                    if (Program.GetCountDown(Program.initTime).Minutes < 10)
+                    counter = (!endlessMode ? Program.GetCountDown(Program.initTime) : timeSince);
+                    if (Program.challengeEnded)
                     {
-                        minutes = "0" + Program.GetCountDown(Program.initTime).Minutes.ToString();
+                        counter = finishedTime;
                     }
-                    else { minutes = Program.GetCountDown(Program.initTime).Minutes.ToString(); }
 
-                    string timeLeft = $"{minutes}:{seconds}";
-                    if (!Program.challengeStarted || Program.challengeEnded) {
-                        timeLeft = "00:00";
+                    if (counter.Seconds < 10) {
+                        seconds = "0" + counter.Seconds.ToString();
                     }
-                    string skipsAvailable = Program.skipRemain.ToString();
+                    else { seconds = counter.Seconds.ToString(); }
+                    if (counter.Minutes < 10)
+                    {
+                        minutes = "0" + counter.Minutes.ToString();
+                    }
+                    else { minutes = counter.Minutes.ToString(); }
+
+                    string timeLeft = (endlessMode ? "Time Spent:" : "Time Left:") + $" {minutes}:{seconds}";
+                    if (!Program.challengeStarted || (Program.challengeEnded && !endlessMode)) {
+                        timeLeft = (endlessMode ? "Time Spent:" : "Time Left:") + " 00:00";
+                    }
+                    string skipsAvailable = Program.skipRemain.ToString() + " Skips - ";
                     string levelName = Program.currentLevel;
                     string goldTime = Program.goldTime.ToString();
-                    string goldSkip = Program.goldSkip.ToString();
-
+                    string goldSkip = " - Gold Skip: " +Program.goldSkip.ToString();
+                    
+                    if (endlessMode){
+                        //timeLeft = "";
+                        skipsAvailable = "";
+                        goldSkip = "";
+                    }
                     Application.Current.Dispatcher.BeginInvoke(new Action(() => {
                         medals.Content = medalCount + " Medals - " + medalTime + " Seconds";
-                        skipsAndTime.Content = skipsAvailable + " Skips - Time Left: " + timeLeft;
+                        skipsAndTime.Content = skipsAvailable + timeLeft;
                         level.Content = "" + levelName;
-                        gold.Content = goldTime + " Seconds - Gold Skip: " + goldSkip;
+                        gold.Content = (endlessMode ? $"{Program.goldCount} Medals - " : "") + goldTime + " Seconds" + goldSkip;
                     }), DispatcherPriority.Render);
                     Thread.Sleep(int.Parse(threadSleep));
                 }
@@ -110,22 +148,147 @@ namespace LogOutputDisplay
 
         public void closeApp(object sender, RoutedEventArgs e)
         {
+            Logger.Log($"closeApp click event");
             Environment.Exit(0);
         }
         public void startApp(object sender, RoutedEventArgs e)
         {
-            Program.currentLevel = "### Initializing...";
-            Thread MainStart = new Thread(Program.MainStartUp);
-            MainStart.IsBackground = true;
-            MainStart.Start();
+            Logger.Log("startApp click event");
+            if (endlessMode) {
+                Logger.Log("EndlessMode Init");
+                Program.allowedLevels.AddRange(Directory.GetDirectories(Config.configValues["SteamPath"]));
+                doneButtonName.Visibility = Visibility.Visible;
+                initTime = DateTime.Now;
+                Program.challengeStarted = true;
+                Program.CopyRandomLevel(Program.challengePath);
+                Program.diamondTime = Program.GetDiamondTime(Program.challengePath + "ROHC.level");
+                Program.goldTime = Program.GetGoldTime(Program.challengePath + "ROHC.level");
+                Program.skipRemain = 0;
 
-            button1.Content = "Skip";
-            button1.Click -= startApp;
-            button1.Click += skipButton;
+                Thread endlog = new Thread(EndlessLog);
+                endlog.IsBackground = true;
+                endlog.Start();
+                Logger.Log("Finished Setting Up EndlessMode");
+
+                button1.Content = "Next";
+                button1.Click -= startApp;
+                button1.Click += nextButton;
+            }
+            else {
+                Logger.Log("Normal ROHC Mode Init");
+                Program.currentLevel = "### Initializing...";
+                Thread MainStart = new Thread(Program.MainStartUp);
+                MainStart.IsBackground = true;
+                MainStart.Start();
+
+                button1.Content = "Skip";
+                button1.Click -= startApp;
+                button1.Click += skipButton;
+            }
+            
         }
         public void skipButton(object sender, RoutedEventArgs e)
         {
+            Logger.Log("skipButton click event");
             Program.WaitForSkip();
+        }
+        public void nextButton(object sender, RoutedEventArgs e)
+        {
+            Logger.Log("nextButton click event");
+            Program.CopyRandomLevel(Program.challengePath);
+            Program.medalHistory.Add("Skipped");
+            Program.diamondTime = Program.GetDiamondTime(Program.challengePath + "ROHC.level");
+            Program.goldTime = Program.GetGoldTime(Program.challengePath + "ROHC.level");
+            Logger.Log("Finished nextButton sequence");
+        }
+        public void doneButton(object sender, RoutedEventArgs e)
+        {
+            Logger.Log("doneButton click event");
+            Program.challengeEnded = true;
+            Program.currentLevel = "Finished! Great Attempt!";
+            Program.goldTime = 0;
+            Program.diamondTime = 0;
+            Program.HighscoreSaving();
+            finishedTime = counter;
+
+            button1.Visibility = Visibility.Hidden;
+            doneButtonName.Visibility = Visibility.Hidden;
+            Logger.Log("Finished doneButton events");
+        }
+
+        public static void EndlessLog()
+        {
+            Logger.Log("Began EndlessMode Logging Thread");
+            string playerPath = @".\ROHC Files\Player.log";
+            string logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow"), @"Bad Habit\MarbleItUp\Player.log");
+            File.Delete(playerPath);
+            File.Copy(logPath, playerPath);
+            int latestScoreIndex = File.ReadAllText(playerPath).Length - 1;
+            while (true)
+            {
+                string logContent = "";
+                File.Delete(playerPath);
+                File.Copy(logPath, playerPath);
+                logContent = File.ReadAllText(playerPath);
+
+                try
+                {
+                    logContent = logContent.Substring(latestScoreIndex);
+                }
+                catch
+                {
+                    latestScoreIndex = 0;
+                    logContent = File.ReadAllText(@".\ROHC Files\Player.log");
+                }
+
+                int logIndex = logContent.IndexOf("Level Complete ");
+                if (logIndex != -1)
+                {
+                    latestScoreIndex = logIndex + latestScoreIndex + 15;
+
+                    int newLineIndex = logContent.Substring(logIndex).IndexOf("\n");
+                    string completeLine = "";
+
+                    if (newLineIndex != -1)
+                    {
+                        completeLine = logContent.Substring(logIndex, newLineIndex);
+                    }
+                    else
+                    {
+                        completeLine = logContent.Substring(logIndex);
+                    }
+
+                    Logger.Log(completeLine);
+                    int timeIndex = completeLine.IndexOf("Time: ");
+                    timeIndex += 6;
+                    float time = -1f;
+                    bool success = float.TryParse(completeLine.Substring(timeIndex), out time);
+                    if (!success) {
+                        throw new Exception("Time was not a valid float");
+                    }
+                    string levelLine = logContent.Substring(logIndex + 16, timeIndex - 26);
+
+                    if (time < Program.GetGoldTime(Program.challengePath + "ROHC.level") && time > Program.GetDiamondTime(Program.challengePath + "ROHC.level"))
+                    {
+                        Program.goldCount++;
+                        Program.medalHistory.Add("Gold Medal");
+                        Program.CopyRandomLevel(Program.challengePath);
+                        Program.diamondTime = Program.GetDiamondTime(Program.challengePath + "ROHC.level");
+                        Program.goldTime = Program.GetGoldTime(Program.challengePath + "ROHC.level");
+                    }
+                    else if (time < Program.diamondTime && levelLine == "ROHC")
+                    {
+                        Program.medalCount++;
+                        Program.medalHistory.Add("Diamond Medal");
+                        Program.CopyRandomLevel(Program.challengePath);
+                        Program.diamondTime = Program.GetDiamondTime(Program.challengePath + "ROHC.level");
+                        Program.goldTime = Program.GetGoldTime(Program.challengePath + "ROHC.level");
+                    }
+
+
+                }
+                Thread.Sleep(1000);
+            }
         }
 
         public void UpdateDebugLog(string newText)
@@ -236,7 +399,7 @@ namespace LogOutputDisplay
         //silly dimden
         //thanks to j2 for some help with troubleshooting and rng
 
-        static string steamFilePath;
+        public static string steamFilePath;
         public static string configPath = @".\ROHC Files\config.txt";
         static SpeechSynthesizer synthesizer = new SpeechSynthesizer();
         static bool usingTTS = false;
@@ -246,7 +409,7 @@ namespace LogOutputDisplay
 
         static string originPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow"), @"Bad Habit\MarbleItUp\");
         static string customPath = originPath + @"CustomLevels\";
-        static string challengePath = customPath + @"RandomChallenge\";
+        public static string challengePath = customPath + @"RandomChallenge\";
         public static string currentLevel = "Starting Up...";
 
         public static int medalCount = 0;
@@ -267,15 +430,17 @@ namespace LogOutputDisplay
         static int minutes = 0;
         public static bool challengeStarted = false;
         public static bool challengeEnded = false;
-        
+        public static List<string> bannedLevels = new List<string>();
+        public static string mode = "";
+        public static int goldCount = 0;
+
         public static void MainStartUp()
         {
             Logger.Log("Setting Up Program...");
 
             usingTTS = Config.configValues["TTS"].ToLower().Trim() == "true";
             goldSkipping = Config.configValues["GoldSkip"].ToLower().Trim() == "true";
-            setSeed = Config.configValues["Seed"].ToLower().Trim() != "false";
-            seed = Config.configValues["Seed"].GetHashCode();
+
             minutes = Convert.ToInt32(Config.configValues["TimeLimit"].ToLower().Trim());
             Logger.Log("Setup MainStartUp Configs");
 
@@ -294,15 +459,7 @@ namespace LogOutputDisplay
             File.Copy(@".\ROHC Files\ROHC.level", challengePath + "ROHC.level");
             Logger.Log("Fixed Temp ROHC.level");
 
-            if (setSeed) {
-                //setseed here
-                rnd = new Random(seed);
-                Logger.Log($"Set Seed: {seed}");
-            }
-            else {
-                rnd = new Random(randomSeed);
-                Logger.Log($"Random Seed: {randomSeed}");
-            }
+
 
             synthesizer.SetOutputToDefaultAudioDevice();
             if (usingTTS) {
@@ -310,10 +467,8 @@ namespace LogOutputDisplay
                 Logger.Log("Activated TTS");
             }
             float DTmax = 0;
-            int goldCount = 0;
             bool isEverything = false;
-            string mode = "";
-            List<String> bannedLevels = new List<String>();
+
             List<String> impossibleLevels = new List<String>() { "2506559064", "2505197399", "2573074416", "1569010731", "1579037685" };
             // massive orb gravity // head reupload // ansons mayhem level // pain // impossible ring jump // ^^^^
             List<String> challengingLevels = new List<String>() { "2684082316", "2791461738", "2790082937", "2788029425", "2787586183", "2070710576", "1800627073", "2492180870", "2465277976", "1617593121", "1627866427", "2508568039", "2075463805", "2078203299", "2499538173", "2575792735", "1930341412", "1800971629", "2638960497", "2727269080", "1577400348", "2755282390", };
@@ -448,7 +603,7 @@ namespace LogOutputDisplay
                 catch
                 {
                     latestScoreIndex = 0;
-                    logContent = File.ReadAllText(@".\Player.log");
+                    logContent = File.ReadAllText(@".\ROHC Files\Player.log");
                 }
 
                 int logIndex = logContent.IndexOf("Level Complete ");
@@ -585,6 +740,14 @@ namespace LogOutputDisplay
                 "Restart This Program And See If You Can Beat Your Best Score!"
 
                 );
+            HighscoreSaving();
+
+            skipRemain = 0;
+
+            //File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
+        }
+        public static void HighscoreSaving()
+        {
             int fileCount = Directory.GetFiles(@".\Highscores", "*.txt").Length + 1;
             string highscorePath = $@".\Highscores\Attempt {fileCount}.txt";
 
@@ -615,6 +778,7 @@ Attempt Number #{fileCount}
 Diamond Medals: {medalCount}
 Gold Medals: {goldCount}
 Challenge Mode: {mode}
+Endless Mode: {MainWindow.endlessMode}
 
 Level History:
 ");
@@ -633,10 +797,10 @@ Level History:
                 $@"Seed: {highscoreSeed}" + "\n" +
                 $@"Used TTS: {usingTTS}" + "\n" +
                 $@"Used Gold Skipping: {goldSkipping}" + "\n" +
-                $@"Time Limit: {minutes} Minute(s)" + "\n" +
+                (!MainWindow.endlessMode ? $@"Time Limit: {minutes} Minute(s)\n" : $"Time Spent {(MainWindow.counter.TotalMinutes < 1 ? 0 : Math.Floor(MainWindow.counter.TotalMinutes))}:{(MainWindow.counter.Seconds < 10 ? $"0{MainWindow.counter.Seconds}" : $"{MainWindow.counter.Seconds}")}\n") +
                 $@"Allowed Level Count: {allowedLevels.Count()}");
 
-            File.AppendAllText(highscorePath, "\n\n\n" + $@"Banned Levels:" + "\n");
+            File.AppendAllText(highscorePath, "\n\n\n" + (MainWindow.endlessMode ? "" : $@"Banned Levels:") + "\n");
             for (int i = 0; i < bannedLevels.Count; i++)
             {
                 int lineAmount = File.ReadLines(highscorePath).Count();
@@ -646,10 +810,8 @@ Level History:
                     File.AppendAllText(highscorePath, " \n");
                 }
             }
-            skipRemain = 0;
-
-            //File.AppendAllText(@".\highscore.txt","Attempt " + File.ReadAllLines(@".\highscore.txt").Length + " - " + medalCount + " Diamond Medals / " + goldCount + " Gold Medals - Mode > " + mode + "\n");
         }
+
         public static string GetRandomLevel()
         {
             random = allowedLevels[rnd.Next(allowedLevels.Count)];
@@ -671,6 +833,11 @@ Level History:
         public static TimeSpan GetCountDown(DateTime initTime)
         {
             TimeSpan t = initTime - DateTime.Now;
+            return t;
+        }
+        public static TimeSpan GetCountUp(DateTime initTime)
+        {
+            TimeSpan t = (DateTime.Now - initTime);
             return t;
         }
 

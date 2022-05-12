@@ -26,11 +26,11 @@
         <Label x:Name="skipsAndTime" Content="# Skips - Time Left: ##:##" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="46" Width="366" FontSize="24" Margin="10,150,0,0"/>
         <Image HorizontalAlignment="Left" Height="44" Margin="20,109,0,0" VerticalAlignment="Top" Width="44" Source="https://cdn.discordapp.com/attachments/365772775832420353/967120895493693530/GoldMedal.png"/>
         <Button x:Name="button1" Click="startApp" Content="Start" HorizontalAlignment="Left" Margin="351,196,0,0" VerticalAlignment="Top" Width="75" BorderBrush="#00707070" Background="#00DDDDDD" Foreground="White" FontWeight="Bold" FontSize="24"/>
-        <Label Content="ROHC By VilleOlof" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="48" Width="228" FontSize="24" Margin="10,191,0,0"/>
+        <Label x:Name="authorField" Content="ROHC By VilleOlof" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="48" Width="228" FontSize="24" Margin="10,191,0,0"/>
         <ScrollViewer x:Name="DebugContainer" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Margin="0,232,0,0">
             <TextBlock x:Name="DebugLabel" Text="EMPTY" HorizontalAlignment="Left" Height="Auto" VerticalAlignment="Top" Width="456" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black"/>
         </ScrollViewer>
-
+        <Button x:Name="doneButtonName" Click="doneButton" Content="Done" HorizontalAlignment="Left" Margin="271,196,0,0" VerticalAlignment="Top" Width="75" BorderBrush="#00707070" Background="#00DDDDDD" Foreground="White" FontWeight="Bold" FontSize="24" Visibility="Hidden"/>
 
     </Grid>
 </Window>
