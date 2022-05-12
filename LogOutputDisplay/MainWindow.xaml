@@ -15,10 +15,11 @@
         Topmost="True" 
         AllowsTransparency="True" 
         WindowStyle="None" 
+        Icon="newrohc.ico"
         Opacity="0.85">
     <Grid Background="#FF323232">
         <Label x:Name="medals" Content="# Medals - ## Seconds" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="46" Width="314" FontSize="24" Margin="81,58,0,0"/>
-        <Label x:Name="level" Content="Failed To Get Log Content" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="46" Width="456" FontSize="24" Margin="10,10,0,0"/>
+        <Label x:Name="level" Content="Failed To Get Content" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="46" Width="456" FontSize="24" Margin="10,10,0,0"/>
         <Label x:Name="gold" Content="## Seconds - Gold Skip: ##" HorizontalAlignment="Left" VerticalAlignment="Top" Foreground="White" Background="Transparent" FontWeight="Bold" FontFamily="Segoe UI Black" Height="46" Width="366" FontSize="24" Margin="81,109,0,0"/>
         <Button Click="closeApp" Content="X" HorizontalAlignment="Left" Margin="431,196,0,0" VerticalAlignment="Top" Width="35" BorderBrush="#00707070" Background="#00DDDDDD" Foreground="White" FontWeight="Bold" FontSize="24"/>
         <Image HorizontalAlignment="Left" Height="44" Margin="20,60,0,0" VerticalAlignment="Top" Width="44" Source="https://cdn.discordapp.com/attachments/365772775832420353/967119179037671554/diamond.png"/>

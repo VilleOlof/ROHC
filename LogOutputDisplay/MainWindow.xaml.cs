@@ -65,6 +65,9 @@ namespace LogOutputDisplay
 
             DebugLabel.Visibility = Logger.isActive ? Visibility.Visible : Visibility.Hidden;
             DebugContainer.Visibility = Logger.isActive ? Visibility.Visible : Visibility.Hidden;
+            int currentmode = Convert.ToInt32(Config.configValues["ChallengeMode"]) - 1;
+            string[] modeArray = new string[] { "Everything", "Chaos", "Intermediate", "Normal", "Shorty", "Custom" };
+            Program.currentLevel = $"Press Start! | Mode: [{modeArray[currentmode]}]";
             string seconds = "";
             string minutes = "";
             Task.Run(() =>
@@ -111,6 +114,7 @@ namespace LogOutputDisplay
         }
         public void startApp(object sender, RoutedEventArgs e)
         {
+            Program.currentLevel = "### Initializing...";
             Thread MainStart = new Thread(Program.MainStartUp);
             MainStart.IsBackground = true;
             MainStart.Start();
@@ -305,60 +309,6 @@ namespace LogOutputDisplay
                 synthesizer.Speak("TTS Activated");
                 Logger.Log("Activated TTS");
             }
-
-            /*
-            Logger.Log(@"
-Welcome to ROHC (Random One Hour Challenge)!!
-- Made by VilleOlof
-- With A Lot Of Help From TalentedPlatinum (Most Notably ByteStream & Proper Log Reading)
-
-- You Got One Hour on You to Get As Many Diamond Medals As Possible. -
-
-
-Once You've Ran This Program (Which Has Happened Already)- 
-You Should Have A New Custom Chapter Called 'RandomChallenge' With An Empty Level Inside.
-
-Once You've Begun The Challenge, You Just Need to Refresh The Level Inside By Just Going In & Out Of The Chapter
-And Then A Random Level Will Have Appeared.
-
-This Program Keeps Track Of All The Medals You've Obtained And Reports It At The End.
-
-You Can Enable TTS in the config.txt File If You Prefer, It Will Read Out New Diamond Times, 
-Completions & Time Left At Some Intervals And Times Up
-
-There's Two Skip Modes (3 Skips Only & Only Skip If Gold Medal Is Aquired)
-Gold Medal Skip Mode Is Enabled By Default (Can Change in config.txt on line 3)
-
-The Program (As You Might Have Noticed) Auto Launched A UI For You
-(Can Be Disabled On Line 4 in config.txt)
-
-The Program Generates A Random Seed If Line 5 In config.txt is 'false'
-If You Change This To Anything Else That Will Be The Random Seed
-
-On Line 6 In config.txt You Can Change The Time Limit (Default 60)
-This Number Changes In Minutes So Lowest Is 1 Minutes And You Can
-Customize How Long You Wanna Play The Game
-
-You Can Change The UI (LogOutputDisplay.exe) Configs in layoutconfig.txt
-Line 1 Is How Far From The Left The Window Should Be  
-Line 2 Is How Far From The Top The Window Should Be  
-Line 3 Is The Amount Of Time It Should Take For The Overlay To Update (Default 1500)  
-
-Important: If Your Steam Directory Is Not The Default Path in 'Program Files (x86)\Steam',
-Change The Path in 'config.txt' To Suit Your Installation Path.
-
-
-!!! Before Starting, Choose Your Challenge Mode Below By Typing The Correlating Number !!!
-
-'1' - Everything (Nothing Is Banned & Every Level Has a Chance To Get Rolled)
-'2' - Chaos (Only Impossible DTs And DTs Above 10 Minutes Are Banned)
-'3' - Intermediate (Only Impossible DTs And DTs Above 5 Minutes Are Banned)
-'4' - 'Beginner' (Only Impossible DTs And DTs Above 3 Minutes Are Banned, Alongside A Few Noticably Hard Levels)
-'5' - Shorty (Only Impossible DTs And DTs Above 1 Minutes Are Banned)
-'6' - Custom (Reads Banned Levels From 'userLevels.txt', Default Is An Example File Content & Format)
-
-");
-*/
             float DTmax = 0;
             int goldCount = 0;
             bool isEverything = false;
@@ -439,6 +389,8 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
                     {
                         bannedLevels.Add(curryId);
                     }
+                    currentLevel = System.IO.Path.GetFileNameWithoutExtension(Directory.GetFiles(currentDir)[0]);
+                    //currentLevel = $"Processing: {curryId}";
                     //Logger.Log("DIR " + Directory.GetFiles(currentDir)[0] + "   PARAM; " + physParams);
                 }
             }
@@ -620,6 +572,9 @@ Change The Path in 'config.txt' To Suit Your Installation Path.
             diamondTime = 0;
             goldTime = 0;
 
+            File.Delete(challengePath + "ROHC.level");
+            File.Copy(@".\ROHC Files\ROHC.level", challengePath + "ROHC.level");
+            Logger.Log("Fixed Temp ROHC.level");
 
             Logger.Log("Time Is Up! No More Gaming!");
             TTSQueue.Enqueue("Time Is Up! No More Gaming!");
