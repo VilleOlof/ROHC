@@ -797,7 +797,7 @@ Level History:
                 $@"Seed: {highscoreSeed}" + "\n" +
                 $@"Used TTS: {usingTTS}" + "\n" +
                 $@"Used Gold Skipping: {goldSkipping}" + "\n" +
-                (!MainWindow.endlessMode ? $@"Time Limit: {minutes} Minute(s)\n" : $"Time Spent {(MainWindow.counter.TotalMinutes < 1 ? 0 : Math.Floor(MainWindow.counter.TotalMinutes))}:{(MainWindow.counter.Seconds < 10 ? $"0{MainWindow.counter.Seconds}" : $"{MainWindow.counter.Seconds}")}\n") +
+                (!MainWindow.endlessMode ? $"Time Limit: {minutes} Minute(s)\n" : $"Time Spent {(MainWindow.counter.TotalMinutes < 1 ? 0 : Math.Floor(MainWindow.counter.TotalMinutes))}:{(MainWindow.counter.Seconds < 10 ? $"0{MainWindow.counter.Seconds}" : $"{MainWindow.counter.Seconds}")}\n") +
                 $@"Allowed Level Count: {allowedLevels.Count()}");
 
             File.AppendAllText(highscorePath, "\n\n\n" + (MainWindow.endlessMode ? "" : $@"Banned Levels:") + "\n");
